@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daftar Harga OkeConnect</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
+    </style>
+</head>
+<body class="p-4">
+
+    <div class="max-w-4xl mx-auto">
+        <div class="text-center my-8">
+            <h1 class="text-2xl font-bold text-slate-800 uppercase tracking-wide">Daftar Harga Real-Time</h1>
+            <p class="text-slate-500 text-sm mt-1">Harga otomatis bertambah Rp 200 dari pusat</p>
+        </div>
+
+        <div id="category-list" class="flex flex-wrap justify-center gap-2 mb-6">
+            <button onclick="filterData('Semua')" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold shadow-md">SEMUA</button>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="bg-slate-800 text-white text-left">
+                            <th class="p-4 font-semibold">Produk</th>
+                            <th class="p-4 font-semibold text-right">Harga (+200)</th>
+                            <th class="p-4 font-semibold text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body" class="divide-y divide-slate-100">
+                        <tr>
+                            <td colspan="3" class="p-10 text-center text-slate-400 italic">Sedang menghubungkan ke server OkeConnect...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const targetUrl = 'https://okeconnect.com/harga/json?id=905ccd028329b0a';
+        // Menggunakan proxy alternatif yang lebih ringan
+        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+        
+        let masterData = [];
+
+        async function ambilData() {
+            try {
+                const response = await fetch(proxyUrl);
+                const result = await response.json();
+                
+                // Mengambil string data dari properti 'contents' AllOrigins dan mengubahnya jadi JSON
+                const rawData = JSON.parse(result.contents);
+                
+                // Mapping data OkeConnect (biasanya berbentuk object dengan key kode produk)
+                masterData = Array.isArray(rawData) ? rawData : Object.values(rawData);
+
+                if (masterData.length > 0) {
+                    buatTombolFilter();
+                    tampilkanTabel(masterData);
+                } else {
+                    throw new Error("Data Kosong");
+                }
+            } catch (error) {
+                console.error(error);
+                document.getElementById('table-body').innerHTML = `
+                    <tr><td colspan="3" class="p-10 text-center text-red-500">
+                        <b>Koneksi Gagal:</b> Silakan tekan tombol Refresh pada browser Anda.
+                    </td></tr>`;
+            }
+        }
+
+        function tampilkanTabel(data) {
+            const tbody = document.getElementById('table-body');
+            let html = '';
+
+            data.forEach(item => {
+                const nama = item.produk || item.nama || item.keterangan || "Produk";
+                const hargaAsli = parseFloat(item.harga) || 0;
+                const hargaFinal = hargaAsli + 200;
+                const status = (item.status && item.status.toLowerCase() === 'normal') ? 'AKTIF' : 'AKTIF'; 
+
+                html += `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="p-4 font-medium text-slate-700">${nama}</td>
+                        <td class="p-4 text-right font-bold text-blue-600">Rp ${hargaFinal.toLocaleString('id-ID')}</td>
+                        <td class="p-4 text-center">
+                            <span class="px-2 py-1 rounded text-[10px] font-bold bg-green-100 text-green-700">
+                                ${status}
+                            </span>
+                        </td>
+                    </tr>`;
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        function buatTombolFilter() {
+            const filterContainer = document.getElementById('category-list');
+            const kategoriUnik = [...new Set(masterData.map(item => item.kategori).filter(k => k))];
+
+            kategoriUnik.forEach(kat => {
+                const btn = document.createElement('button');
+                btn.className = "px-4 py-2 bg-white text-slate-600 border border-slate-300 rounded-lg text-xs font-bold hover:bg-blue-50 hover:border-blue-500 transition shadow-sm";
+                btn.innerText = kat.toUpperCase();
+                btn.onclick = () => filterData(kat);
+                filterContainer.appendChild(btn);
+            });
+        }
+
+        function filterData(kat) {
+            if (kat === 'Semua') {
+                tampilkanTabel(masterData);
+            } else {
+                const hasil = masterData.filter(item => item.kategori === kat);
+                tampilkanTabel(hasil);
+            }
+        }
+
+        ambilData();
+    </script>
+</body>
+</html>
