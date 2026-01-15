@@ -3,59 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pricelist Digital OkeConnect</title>
+    <title>Pricelist Realtime - OkeConnect</title>
     <style>
-        /* CSS untuk tampilan profesional */
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f8f9fa;
-            margin: 0;
-            padding: 15px;
-        }
-        .container {
-            max-width: 800px;
-            margin: auto;
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-        h2 { text-align: center; color: #007bff; margin-bottom: 20px; }
-        .search-box {
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 20px;
-            border: 2px solid #dee2e6;
-            border-radius: 8px;
-            box-sizing: border-box;
-            font-size: 16px;
-        }
-        .search-box:focus { border-color: #007bff; outline: none; }
-        table { width: 100%; border-collapse: collapse; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #2c3e50; }
+        .search-box { width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th { background-color: #007bff; color: white; padding: 12px; text-align: left; position: sticky; top: 0; }
         td { padding: 12px; border-bottom: 1px solid #eee; font-size: 14px; }
-        tr:hover { background-color: #f1f1f1; }
-        .price { font-weight: bold; color: #28a745; }
-        .status-badge {
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-        .normal { background: #d4edda; color: #155724; }
-        .gangguan { background: #f8d7da; color: #721c24; }
-        #loading { text-align: center; padding: 40px; color: #666; font-style: italic; }
+        .loading { text-align: center; padding: 30px; color: #666; font-style: italic; }
+        .status-normal { color: #28a745; font-weight: bold; }
+        .status-gangguan { color: #dc3545; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Daftar Harga Digital</h2>
+    <h2>Pricelist Realtime</h2>
+    <input type="text" id="searchInput" class="search-box" placeholder="Cari produk atau kategori...">
     
-    <input type="text" id="searchInput" class="search-box" placeholder="Cari nama produk atau kategori...">
-
-    <div id="loading">Menghubungkan ke server OkeConnect...</div>
+    <div id="loading">Menghubungkan ke server OkeConnect via Proxy...</div>
 
     <table id="priceTable" style="display:none;">
         <thead>
@@ -71,29 +39,33 @@
 </div>
 
 <script>
-    // Link JSON Anda
+    // Link JSON milikmu
     const targetUrl = 'https://okeconnect.com/harga/json?id=905ccd028329b0a&produk=digital';
-    // Menggunakan Proxy AllOrigins agar lolos blokir CORS di GitHub
+    // Menggunakan Proxy AllOrigins
     const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
 
     let allData = [];
 
-    async function fetchData() {
+    async function loadData() {
+        const loader = document.getElementById('loading');
         try {
             const response = await fetch(proxyUrl);
+            if (!response.ok) throw new Error('Network error');
+            
             const wrapper = await response.json();
+            // PENTING: AllOrigins membungkus data dalam string 'contents'
             const result = JSON.parse(wrapper.contents);
             
-            // Mengambil data (biasanya dalam array 'data' atau langsung array)
-            allData = Array.isArray(result) ? result : (result.data || []);
+            // Mengambil array data
+            allData = result.data || result;
 
-            document.getElementById('loading').style.display = 'none';
+            loader.style.display = 'none';
             document.getElementById('priceTable').style.display = 'table';
-            
             renderTable(allData);
         } catch (error) {
             console.error(error);
-            document.getElementById('loading').innerHTML = `<b style="color:red;">Gagal memuat data.</b><br>Pastikan link JSON aktif.`;
+            loader.innerHTML = `<b style="color:red;">Gagal memuat data.</b><br>
+                                Pastikan koneksi internet aktif atau coba refresh halaman.`;
         }
     }
 
@@ -103,22 +75,19 @@
 
         data.forEach(item => {
             const row = document.createElement('tr');
-            const nama = item.product_name || item.nama || '-';
-            const kategori = item.category || item.operator || '-';
             const harga = parseInt(item.price || item.harga || 0).toLocaleString('id-ID');
-            const status = (item.status || 'normal').toLowerCase();
+            const status = (item.status || 'NORMAL').toUpperCase();
 
             row.innerHTML = `
-                <td><b>${nama}</b><br><small>${item.code || ''}</small></td>
-                <td>${kategori}</td>
-                <td class="price">Rp ${harga}</td>
-                <td><span class="status-badge ${status === 'normal' ? 'normal' : 'gangguan'}">${status}</span></td>
+                <td><b>${item.product_name || item.nama}</b><br><small>${item.code || ''}</small></td>
+                <td>${item.category || item.operator}</td>
+                <td style="color:#28a745; font-weight:bold;">Rp ${harga}</td>
+                <td class="${status === 'NORMAL' ? 'status-normal' : 'status-gangguan'}">${status}</td>
             `;
             tbody.appendChild(row);
         });
     }
 
-    // Fungsi Pencarian
     document.getElementById('searchInput').addEventListener('input', (e) => {
         const val = e.target.value.toLowerCase();
         const filtered = allData.filter(item => 
@@ -128,7 +97,7 @@
         renderTable(filtered);
     });
 
-    fetchData();
+    loadData();
 </script>
 
 </body>
