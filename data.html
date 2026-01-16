@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - LAKU COFFEE</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-6">
+
+    <div id="loginSection" class="min-h-screen flex items-center justify-center">
+        <div class="bg-white p-8 rounded-3xl shadow-xl max-w-sm w-full text-center">
+            <h2 class="text-xl font-bold mb-4">Owner Login</h2>
+            <input type="password" id="passInput" class="w-full border p-3 rounded-xl mb-4 text-center" placeholder="Password">
+            <button onclick="masuk()" class="w-full bg-amber-800 text-white py-3 rounded-xl font-bold">Buka Data</button>
+        </div>
+    </div>
+
+    <div id="adminSection" class="hidden max-w-4xl mx-auto">
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-2xl font-bold">Daftar Feedback ☕</h1>
+            <div class="flex gap-2">
+                <button onclick="hapusSemua()" class="bg-red-500 text-white px-4 py-2 rounded-lg text-xs font-bold">Hapus Semua</button>
+                <button onclick="location.reload()" class="bg-gray-400 text-white px-4 py-2 rounded-lg text-xs font-bold">Keluar</button>
+            </div>
+        </div>
+        <div id="containerData" class="grid gap-4"></div>
+    </div>
+
+    <script>
+        const KUNCI_STORAGE = 'LAKU_DATA';
+        const PASSWORD_BENAR = 'lacof1610';
+
+        function masuk() {
+            if(document.getElementById('passInput').value === PASSWORD_BENAR) {
+                document.getElementById('loginSection').classList.add('hidden');
+                document.getElementById('adminSection').classList.remove('hidden');
+                muatData();
+            } else {
+                alert('Password Salah!');
+            }
+        }
+
+        function muatData() {
+            const data = JSON.parse(localStorage.getItem(KUNCI_STORAGE)) || [];
+            const list = document.getElementById('containerData');
+            list.innerHTML = data.length ? '' : '<p class="text-center text-gray-400">Belum ada feedback.</p>';
+
+            data.reverse().forEach(item => {
+                list.innerHTML += `
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-amber-800">
+                        <div class="flex justify-between text-xs text-gray-400 mb-2">
+                            <span>${item.kategori}</span>
+                            <span>${item.waktu}</span>
+                        </div>
+                        <h4 class="font-bold text-gray-800">${item.nama}</h4>
+                        <p class="text-gray-600 mt-2 text-sm italic">"${item.pesan}"</p>
+                        <p class="text-[10px] text-gray-300 mt-2">Kontak: ${item.email}</p>
+                    </div>
+                `;
+            });
+        }
+
+        function hapusSemua() {
+            if(confirm('Hapus semua data?')) {
+                localStorage.removeItem(KUNCI_STORAGE);
+                muatData();
+            }
+        }
+    </script>
+</body>
+</html>
